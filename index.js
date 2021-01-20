@@ -5,7 +5,7 @@ const util = require('util')
 // const { exec } = (require('child_process'));
 exec = util.promisify(require('child_process').exec);
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 8080;
 
 
 const app = express()
@@ -44,4 +44,7 @@ app.get("/get-available-ressources", async (req, res) => {
 app.listen(PORT, () => {
     console.log("Listenning on port ", PORT)
 })
+
+git clone \
+    https://github.com/GoogleCloudPlatform/nodejs-docs-samples
 
