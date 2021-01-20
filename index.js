@@ -44,7 +44,3 @@ app.get("/get-available-ressources", async (req, res) => {
 app.listen(PORT, () => {
     console.log("Listenning on port ", PORT)
 })
-
-git clone \
-    https://github.com/GoogleCloudPlatform/nodejs-docs-samples
-
