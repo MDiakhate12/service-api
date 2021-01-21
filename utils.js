@@ -1,4 +1,8 @@
-const checkAvailability = async (cpuRequest, memoryRequest, diskRequest) => {
+const util = require('util')
+
+const exec = util.promisify(require('child_process').exec);
+
+module.exports = async (cpuRequest, memoryRequest, diskRequest) => {
     try {
         const { stdout: memoryTotal } = await exec("free --mega | awk '/Mem/ {print $7}'");
         const { stdout: memoryAvailable } = await exec("free --mega | awk '/Mem/ {print $4}'");
@@ -20,5 +24,3 @@ const checkAvailability = async (cpuRequest, memoryRequest, diskRequest) => {
         console.error(error)
     }
 }
-
-module.exports = checkAvailability

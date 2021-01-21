@@ -1,11 +1,8 @@
 const express = require('express')
 const cors = require('cors')
 const connect = require('./config/db');
-const util = require('util')
 const VmInstance = require('./models/vmInstance');
 const checkAvailability = require('./utils');
-
-const exec = util.promisify(require('child_process').exec);
 
 const PORT = process.env.PORT || 8080;
 
@@ -31,12 +28,14 @@ app.get("/", async (req, res) => {
 app.post("/", async (req, res) => {
     const { name, cpu, memory, disk, osImage, osType, numberOfVm } = req.body
 
-    console.log(`REQUESTED RESOURCES: ${req.body} \n`)
+    console.log("REQUESTED RESOURCES: ", req.body)
+    
+    console.log("\n")
 
 
     // GET AVAILABLE RESOURCES
     const resources = await checkAvailability(numberOfVm * cpu, numberOfVm * memory, numberOfVm * disk)
-    console.log(`AVAILABLE RESOURCES: ${resources} \n`)
+    console.log("AVAILABLE RESOURCES: ", resources)
 
     // RETURN TRUE OR FALSE
     if (resources.available) {
