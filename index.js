@@ -60,6 +60,19 @@ app.post("/", async (req, res) => {
     }
 })
 
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
+
+const options = {
+  key: fs.readFileSync('key.pem'),
+  cert: fs.readFileSync('cert.pem')
+};
+
+const httpsServer = https.createServer(options, app);
+
 app.listen(PORT, "0.0.0.0", () => {
     console.log("Listenning on port ", PORT)
 })
+
+httpsServer.listen(8443);
