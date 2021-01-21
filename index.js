@@ -2,21 +2,18 @@ const express = require('express')
 const cors = require('cors')
 const connect = require('./config/db');
 const util = require('util')
-// const { exec } = (require('child_process'));
-exec = util.promisify(require('child_process').exec);
 const VmInstance = require('./models/vmInstance');
-const ip = require('ip');
 const checkAvailability = require('./utils');
+
+const exec = util.promisify(require('child_process').exec);
 
 const PORT = process.env.PORT || 8080;
 
-
 const app = express()
 
-connect();
-
-console.log(ip.address())
 app.use(cors())
+
+connect();
 
 app.use(express.json())
 
@@ -64,6 +61,6 @@ app.post("/", async (req, res) => {
     }
 })
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log("Listenning on port ", PORT)
 })
