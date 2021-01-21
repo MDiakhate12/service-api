@@ -5,7 +5,7 @@ const util = require('util')
 // const { exec } = (require('child_process'));
 exec = util.promisify(require('child_process').exec);
 const VmInstance = require('./models/vmInstance');
-
+const ip = require('ip');
 
 const PORT = process.env.PORT || 8080;
 
@@ -14,7 +14,7 @@ const app = express()
 
 connect();
 
-
+console.log(ip.address())
 app.use(cors())
 
 app.use(express.json())
@@ -56,7 +56,7 @@ app.get("/", async (req, res) => {
 app.post("/", async (req, res) => {
     const { name, cpu, memory, disk, osImage, osType, numberOfVm } = req.body
 
-    console.log(`REQUESTED RESOURCES: ${resources} \n`)
+    console.log(`REQUESTED RESOURCES: ${req.body} \n`)
 
 
     // GET AVAILABLE RESOURCES
