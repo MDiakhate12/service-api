@@ -15,9 +15,30 @@ connect();
 
 app.use(express.json())
 
+app.get("/projects", async (req, res) => {
+    try {
+        let projects = await Project.find()
+        console.log(projects)
+        res.send(projects);
+    } catch (error) {
+        console.error(error)
+    }
+})
+
+app.get("/projects/:projectId/instances", async (req, res) => {
+    projectId = req.params.projectId
+    try {
+        let vmInstances = await VmInstance.find({ projectId })
+        console.log(vmInstances)
+        res.send(vmInstances);
+    } catch (error) {
+        console.error(error)
+    }
+})
+
 app.get("/", async (req, res) => {
     try {
-        let vmInstances = await VmInstance.find()
+        let vmInstances = await VmInstance.find().populate('projectId')
         console.log(vmInstances)
         res.send(vmInstances);
     } catch (error) {
