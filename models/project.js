@@ -9,7 +9,7 @@ const ProjectSchema = new Schema({
     SLA: { type: Number },                    // "1h or 2h or 4h ",
     environment: { type: String },            // "dev prod",
     dataSize: { type: Number },               // "i will ask to moussa for exact value",
-    connectedApplications: { type: String },  // ["Agacy", "CRM" ],
+    connectedApplications: { type: [String] },  // ["Agacy", "CRM" ],
     techRequirements: { type: [String] },       // ["network value", "bandwith"],
     costEstimation: { type: Number }          // "une valeur", 
 });
