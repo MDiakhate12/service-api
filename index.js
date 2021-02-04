@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const connect = require('./config/db');
 const VmInstance = require('./models/vmInstance');
+const Project = require('./models/project');
 const checkAvailability = require('./utils');
 
 const PORT = process.env.PORT || 8080;
@@ -26,10 +27,27 @@ app.get("/", async (req, res) => {
 })
 
 app.post("/", async (req, res) => {
-    const { name, cpu, memory, disk, osImage, osType, numberOfVm } = req.body
+
+    const {
+        projectName,
+        applicationType,
+        dependencies,
+        SLA,
+        environment,
+        dataSize,
+        connectedApplications,
+        techRequirements,
+        costEstimation,
+        name,
+        cpu,
+        memory,
+        disk,
+        osType,
+        osImage
+    } = req.body
 
     console.log("REQUESTED RESOURCES: ", req.body)
-    
+
     console.log("\n")
 
 
@@ -41,14 +59,31 @@ app.post("/", async (req, res) => {
     if (resources.available) {
         try {
             // let os = await OsImage.findOne({ image: osImage, type: osType }).id
+
+            let newProject = new Project({
+                projectName,
+                applicationType,
+                dependencies,
+                SLA,
+                environment,
+                dataSize,
+                connectedApplications,
+                techRequirements,
+                costEstimation
+            })
+
+            projectId = (await newProject.save())._id
+
             let newInstance = new VmInstance({
                 name,
                 cpu,
                 memory,
                 disk,
                 osType,
-                osImage
+                osImage,
+                projectId
             })
+            
             newInstance = await newInstance.save()
             return res.status(201).send(newInstance)
         } catch (error) {

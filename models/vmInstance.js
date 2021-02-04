@@ -8,9 +8,9 @@ const VmInstanceSchema = new Schema({
     cpu: { type: Number, default: 1 },
     memory: { type: Number, default: 2048 },
     disk: { type: Number, default: 100 },
-    os: { type: ObjectId, ref: "osImage" },
     osType: { type: String, default: "Debian" },
-    osImage: { type: String, default: "Ubuntu 20.04" }
+    osImage: { type: String, default: "Ubuntu 20.04" },
+    projectId: { type: Schema.Types.ObjectId, ref: 'Projects' }
 });
 
 const VmInstance = mongoose.model('vmInstances', VmInstanceSchema);
