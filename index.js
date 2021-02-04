@@ -43,7 +43,8 @@ app.post("/", async (req, res) => {
         memory,
         disk,
         osType,
-        osImage
+        osImage,
+        numberOfVm
     } = req.body
 
     console.log("REQUESTED RESOURCES: ", req.body)

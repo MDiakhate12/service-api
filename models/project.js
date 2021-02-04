@@ -11,7 +11,7 @@ const ProjectSchema = new Schema({
     dataSize: { type: Number },               // "i will ask to moussa for exact value",
     connectedApplications: { type: [String] },  // ["Agacy", "CRM" ],
     techRequirements: { type: [String] },       // ["network value", "bandwith"],
-    costEstimation: { type: Number }          // "une valeur", 
+    costEstimation: { type: Number }          // "une valeur",
 });
 
 const Project = mongoose.model('Projects', ProjectSchema);
