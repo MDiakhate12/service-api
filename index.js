@@ -65,7 +65,8 @@ app.post("/", async (req, res) => {
         disk,
         osType,
         osImage,
-        numberOfVm
+        numberOfVm,
+        provider
     } = req.body
 
     console.log("REQUESTED RESOURCES: ", req.body)
@@ -91,7 +92,8 @@ app.post("/", async (req, res) => {
                 dataSize,
                 connectedApplications,
                 techRequirements,
-                costEstimation
+                costEstimation,
+                provider
             })
 
             projectId = (await newProject.save())._id
