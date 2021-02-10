@@ -70,7 +70,7 @@ app.post("/provider-list", async (req, res) => {
 
     // GET PROVIDER ORIENTATION
     try {
-        let providers = (await axios.post('http://faas-cloud-orientation.mouhammad.ml/projects', req.body)).data
+        let providers = (await axios.post('https://faas-cloud-orientation.mouhammad.ml/projects', req.body)).data
         console.log(providers)
         res.send(providers)
     } catch (error) {
