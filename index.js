@@ -4,6 +4,7 @@ const connect = require('./config/db');
 const VmInstance = require('./models/vmInstance');
 const Project = require('./models/project');
 const checkAvailability = require('./utils');
+const axios = require('axios')
 
 const PORT = process.env.PORT || 8080;
 
@@ -47,6 +48,37 @@ app.get("/", async (req, res) => {
 
 })
 
+app.post("/provider-list", async (req, res) => {
+    const {
+        projectName,
+        applicationType,
+        dependencies,
+        SLA,
+        environment,
+        dataSize,
+        connectedApplications,
+        techRequirements,
+        costEstimation,
+        name,
+        cpu,
+        memory,
+        disk,
+        osType,
+        osImage,
+        numberOfVm,
+    } = req.body
+
+    // GET PROVIDER ORIENTATION
+    try {
+        let providers = (await axios.post('http://faas-cloud-orientation.mouhammad.ml/projects', req.body)).data
+        console.log(providers)
+        res.send(providers)
+    } catch (error) {
+        return sendError(error)
+    }
+
+})
+
 app.post("/", async (req, res) => {
 
     const {
@@ -69,16 +101,15 @@ app.post("/", async (req, res) => {
         provider
     } = req.body
 
+    // GET REQUESTED RESOURCES
     console.log("REQUESTED RESOURCES: ", req.body)
-
     console.log("\n")
-
 
     // GET AVAILABLE RESOURCES
     const resources = await checkAvailability(numberOfVm * cpu, numberOfVm * memory, numberOfVm * disk)
     console.log("AVAILABLE RESOURCES: ", resources)
 
-    // RETURN TRUE OR FALSE
+    // SAVE PROJECT ON DATABASE
     if (resources.available) {
         try {
             // let os = await OsImage.findOne({ image: osImage, type: osType }).id
@@ -111,8 +142,7 @@ app.post("/", async (req, res) => {
             newInstance = await newInstance.save()
             return res.status(201).send(newInstance)
         } catch (error) {
-            console.error(error.message)
-            return res.status(500).send("Server error")
+             return sendError(error)
         }
     } else {
         return res.send("Insufficient ressources")
@@ -123,3 +153,7 @@ app.listen(PORT, () => {
     console.log("Listenning on port ", PORT)
 })
 
+const sendError = (error) => {
+    console.error(error.message)
+    return res.status(500).send("Server error")
+}
