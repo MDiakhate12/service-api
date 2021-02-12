@@ -49,25 +49,6 @@ app.get("/", async (req, res) => {
 })
 
 app.post("/provider-list", async (req, res) => {
-    const {
-        projectName,
-        applicationType,
-        dependencies,
-        SLA,
-        environment,
-        dataSize,
-        connectedApplications,
-        techRequirements,
-        costEstimation,
-        name,
-        cpu,
-        memory,
-        disk,
-        osType,
-        osImage,
-        numberOfVm,
-    } = req.body
-
     // GET PROVIDER ORIENTATION
     try {
         let providers = (await axios.post('https://faas-cloud-orientation.mouhammad.ml/projects', req.body)).data
@@ -83,22 +64,22 @@ app.post("/", async (req, res) => {
 
     const {
         projectName,
+        projectArchitecture,
         applicationType,
-        dependencies,
-        SLA,
         environment,
+        SLA,
         dataSize,
+        dependencies,
         connectedApplications,
-        techRequirements,
         costEstimation,
-        name,
+        provider,
+        vmGroupName,
+        numberOfVm,
         cpu,
         memory,
         disk,
         osType,
         osImage,
-        numberOfVm,
-        provider
     } = req.body
 
     // GET REQUESTED RESOURCES
@@ -106,47 +87,47 @@ app.post("/", async (req, res) => {
     console.log("\n")
 
     // GET AVAILABLE RESOURCES
-    const resources = await checkAvailability(numberOfVm * cpu, numberOfVm * memory, numberOfVm * disk)
-    console.log("AVAILABLE RESOURCES: ", resources)
+    // const resources = await checkAvailability(numberOfVm * cpu, numberOfVm * memory, numberOfVm * disk)
+    // console.log("AVAILABLE RESOURCES: ", resources)
 
     // SAVE PROJECT ON DATABASE
-    if (resources.available) {
-        try {
-            // let os = await OsImage.findOne({ image: osImage, type: osType }).id
+    // if (resources.available) {
+    try {
+        // let os = await OsImage.findOne({ image: osImage, type: osType }).id
 
-            let newProject = new Project({
-                projectName,
-                applicationType,
-                dependencies,
-                SLA,
-                environment,
-                dataSize,
-                connectedApplications,
-                techRequirements,
-                costEstimation,
-                provider
-            })
+        let newProject = new Project({
+            projectName,
+            projectArchitecture,
+            applicationType,
+            environment,
+            SLA,
+            dataSize,
+            dependencies,
+            connectedApplications,
+            costEstimation,
+            provider,
+        })
 
-            projectId = (await newProject.save())._id
+        projectId = (await newProject.save())._id
 
-            let newInstance = new VmInstance({
-                name,
-                cpu,
-                memory,
-                disk,
-                osType,
-                osImage,
-                projectId
-            })
+        let newInstance = new VmInstance({
+            vmGroupName,
+            numberOfVm,
+            cpu,
+            memory,
+            disk,
+            osType,
+            osImage,
+        })
 
-            newInstance = await newInstance.save()
-            return res.status(201).send(newInstance)
-        } catch (error) {
-             return sendError(error)
-        }
-    } else {
-        return res.send("Insufficient ressources")
+        newInstance = await newInstance.save()
+        return res.status(201).send(newInstance)
+    } catch (error) {
+        return sendError(error)
     }
+    // } else {
+    //     return res.send("Insufficient ressources")
+    // }
 })
 
 app.listen(PORT, () => {
