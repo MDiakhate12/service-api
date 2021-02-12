@@ -39,7 +39,7 @@ app.get("/projects/:projectId/instances", async (req, res) => {
 
 app.get("/", async (req, res) => {
     try {
-        let vmInstances = await VmInstance.find().populate('projectId')
+        let vmInstances = await VmInstance.find() //.populate('projectId')
         console.log(vmInstances)
         res.send(vmInstances);
     } catch (error) {
