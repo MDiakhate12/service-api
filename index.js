@@ -43,24 +43,36 @@ app.get("/", async (req, res) => {
         console.log(vmInstances)
         res.send(vmInstances);
     } catch (error) {
-        console.error(error)
+        console.error(error.message)
+        return res.status(500).send("Server error")
     }
 
 })
 
-app.post("/provider-list", async (req, res) => {
+app.post("/provider-list", (req, res) => {
     // GET PROVIDER ORIENTATION
-    try {
-        let providers = (await axios.post('https://faas-cloud-orientation.mouhammad.ml/projects', req.body)).data
-        console.log(providers)
-        res.send(providers)
-    } catch (error) {
-        return sendError(error)
-    }
-
+    axios.post('https://faas-cloud-orientation.mouhammad.ml/projects', req.body)
+        .then((response) => {
+            console.log(response.data)
+            return res.send(response.data)
+        }).catch((error) => {
+            console.error(error.message)
+            return res.status(500).send("Server error")
+        })
 })
 
-app.post("/", async (req, res) => {
+app.post("/create-vm", (req, res) => {
+    // CREATE NEW VM
+    axios.post('http://localhost:4000/', req.body)
+        .then((response) => {
+            return res.send(response.data)
+        })
+        .catch((error) => {
+            return sendError(error)
+        })
+})
+
+app.post("/register-vm", async (req, res) => {
 
     const {
         projectName,
@@ -123,7 +135,8 @@ app.post("/", async (req, res) => {
         newInstance = await newInstance.save()
         return res.status(201).send(newInstance)
     } catch (error) {
-        return sendError(error)
+        console.error(error.message)
+        return res.status(500).send("Server error")
     }
     // } else {
     //     return res.send("Insufficient ressources")
@@ -133,8 +146,3 @@ app.post("/", async (req, res) => {
 app.listen(PORT, () => {
     console.log("Listenning on port ", PORT)
 })
-
-const sendError = (error) => {
-    console.error(error.message)
-    return res.status(500).send("Server error")
-}
