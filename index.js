@@ -63,7 +63,7 @@ app.post("/provider-list", (req, res) => {
 
 app.post("/create-vm", (req, res) => {
     // CREATE NEW VM
-    axios.post('http://localhost:4000/', req.body)
+    axios.post('https://faas-cloud-backend.mouhammad.ml/', req.body)
         .then((response) => {
             return res.send(response.data)
         })
