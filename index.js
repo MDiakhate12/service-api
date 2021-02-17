@@ -68,7 +68,8 @@ app.post("/create-vm", (req, res) => {
             return res.send(response.data)
         })
         .catch((error) => {
-            return sendError(error)
+            console.error(error.message)
+            return res.status(500).send("Server error")
         })
 })
 
