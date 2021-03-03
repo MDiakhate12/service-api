@@ -61,11 +61,20 @@ app.post("/provider-list", (req, res) => {
         })
 })
 
-app.post("/create-vm", (req, res) => {
+app.post("/create-vm", async (req, res) => {
+
     // CREATE NEW VM
-    axios.post('https://faas-cloud-backend.mouhammad.ml/', req.body)
-        .then((response) => {
-            return res.send(response.data)
+    // axios.post('https://faas-cloud-provisioning.mouhammad.ml/', req.body)
+    axios.post('http://localhost:4000/', req.body)
+        .then(async (response) => {
+            newInstances = await VmInstance.find({ instanceGroupName: req.body.instanceGroupName })
+            console.log("FROM CREATE VM:", newInstances)
+            newInstances.forEach(async (instance, index) => {
+                instance.name = response.data[index].name
+                instance.publicIP = response.data[index].ip
+                await instance.save()
+            })
+            return res.send(newInstances)
         })
         .catch((error) => {
             console.error(error.message)
@@ -86,7 +95,7 @@ app.post("/register-vm", async (req, res) => {
         connectedApplications,
         costEstimation,
         provider,
-        vmGroupName,
+        instanceGroupName,
         numberOfVm,
         cpu,
         memory,
@@ -94,6 +103,13 @@ app.post("/register-vm", async (req, res) => {
         osType,
         osImage,
     } = req.body
+
+    // TEST IF INSTANCE GROUP WITH SAME NAME EXIST
+    testInstance = await VmInstance.find({ instanceGroupName })
+
+    if (testInstance.length !== 0) {
+        return res.send("Instance with same name already exist")
+    }
 
     // GET REQUESTED RESOURCES
     console.log("REQUESTED RESOURCES: ", req.body)
@@ -124,17 +140,18 @@ app.post("/register-vm", async (req, res) => {
         projectId = (await newProject.save())._id
 
         let newInstance = new VmInstance({
-            vmGroupName,
+            instanceGroupName,
             numberOfVm,
             cpu,
             memory,
             disk,
             osType,
             osImage,
+            projectId
         })
 
         newInstance = await newInstance.save()
-        return res.status(201).send(newInstance)
+        return res.status(201).send({ _id: projectId, ...newProject })
     } catch (error) {
         console.error(error.message)
         return res.status(500).send("Server error")
