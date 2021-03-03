@@ -1,5 +1,5 @@
 {
-    "name": "get-available-ressources",
+    "name": "service-api",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
@@ -8,10 +8,10 @@
         "live": "nodemon index",
         "test": "mocha --exit test/*.test.js"
     },
-    "author": "Mouhammad Diakahté",
+    "author": "Mouhammad Diakhaté",
     "repository": {
         "type": "git",
-        "url": "https://github.com/MDiakhate12/provisionning-available-resources.git"
+        "url": "https://github.com/MDiakhate12/service-api.git"
     },
     "license": "Apache-2.0",
     "engines": {
@@ -22,10 +22,5 @@
         "cors": "^2.8.5",
         "express": "^4.17.1",
         "mongoose": "^5.11.12"
-    },
-    "devDependencies": {
-        "nodemon": "^2.0.7",
-        "mocha": "^8.1.3",
-        "supertest": "^6.0.0"
     }
 }
