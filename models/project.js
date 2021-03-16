@@ -12,7 +12,16 @@ const ProjectSchema = new Schema({
     connectedApplications: { type: [String] },  // ["Agacy", "CRM" ],
     techRequirements: { type: [String] },       // ["network value", "bandwith"],
     costEstimation: { type: Number },          // "une valeur",
-    provider: { type: String }                 // "une valeur",
+    provider: { type: String },                // "une valeur",
+    frontendOptions: {
+        frontend_project_repository: { type: String }
+    },
+    backendOptions: {
+        backend_db_uri: { type: String },
+        backend_port: { type: Number },
+        backend_main_file: { type: String },
+        backend_project_repository: { type: String },
+    }
 });
 
 const Project = mongoose.model('Projects', ProjectSchema);

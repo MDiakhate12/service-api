@@ -2,11 +2,23 @@ const express = require('express')
 const cors = require('cors')
 const connect = require('./config/db');
 const VmInstance = require('./models/vmInstance');
+const LoadBalancer = require('./models/loadBalancer');
 const Project = require('./models/project');
 const checkAvailability = require('./utils');
 const axios = require('axios')
 
 const PORT = process.env.PORT || 8080;
+const BASE_DOMAIN_NAME = "mouhammad.ml"
+const PROVISIONING_URL = "http://localhost:4000"
+// const PROVISIONING_URL = `https://faas-cloud-provisioning.${BASE_DOMAIN_NAME}`
+const ORIENTATION_URL = "http://localhost:8085"
+// const ORIENTATION_URL = `https://faas-cloud-orientation.${BASE_DOMAIN_NAME}`
+
+// Suffix of ressources created on dev (vm instances)
+const devInstances = ["frontend", "backend", "database"]
+
+// Suffix of ressources created on prod (loadBalancers)
+const prodInstances = ["frontend", "backend"]
 
 const app = express()
 
@@ -51,7 +63,7 @@ app.get("/", async (req, res) => {
 
 app.post("/provider-list", (req, res) => {
     // GET PROVIDER ORIENTATION
-    axios.post('https://faas-cloud-orientation.mouhammad.ml/projects', req.body)
+    axios.post(`${ORIENTATION_URL}/projects`, req.body)
         .then((response) => {
             console.log(response.data)
             return res.send(response.data)
@@ -61,48 +73,20 @@ app.post("/provider-list", (req, res) => {
         })
 })
 
-app.post("/create-vm", async (req, res) => {
-
-    // CREATE NEW VM
-    // axios.post('https://faas-cloud-provisioning.mouhammad.ml/', req.body)
-    axios.post('http://localhost:4000/', req.body)
-        .then(async (response) => {
-            newInstances = await VmInstance.find({ instanceGroupName: req.body.instanceGroupName })
-            console.log("FROM CREATE VM:", newInstances)
-            newInstances.forEach(async (instance, index) => {
-                instance.name = response.data[index].name
-                instance.publicIP = response.data[index].ip
-                await instance.save()
-            })
-            return res.send(newInstances)
-        })
-        .catch((error) => {
-            console.error(error.message)
-            return res.status(500).send("Server error")
-        })
-})
-
 app.post("/register-vm", async (req, res) => {
 
     const {
-        projectName,
-        projectArchitecture,
-        applicationType,
-        environment,
-        SLA,
-        dataSize,
-        dependencies,
-        connectedApplications,
-        costEstimation,
-        provider,
-        instanceGroupName,
-        numberOfVm,
         cpu,
         memory,
         disk,
         osType,
         osImage,
+        ...project
     } = req.body
+
+
+    // Example replace "DiafProject" to "diaf-project"
+    let instanceGroupName = normalizeString(project.projectName)
 
     // TEST IF INSTANCE GROUP WITH SAME NAME EXIST
     testInstance = await VmInstance.find({ instanceGroupName })
@@ -124,33 +108,29 @@ app.post("/register-vm", async (req, res) => {
     try {
         // let os = await OsImage.findOne({ image: osImage, type: osType }).id
 
-        let newProject = new Project({
-            projectName,
-            projectArchitecture,
-            applicationType,
-            environment,
-            SLA,
-            dataSize,
-            dependencies,
-            connectedApplications,
-            costEstimation,
-            provider,
-        })
+        let newProject = new Project(project)
 
         projectId = (await newProject.save())._id
 
-        let newInstance = new VmInstance({
-            instanceGroupName,
-            numberOfVm,
-            cpu,
-            memory,
-            disk,
-            osType,
-            osImage,
-            projectId
-        })
+        if (project.applicationType === "web" && project.environment === "dev") {
+            devInstances.forEach(async suffix => await VmInstance({
+                name: `${instanceGroupName}-${suffix}`,
+                instanceGroupName,
+                cpu,
+                memory,
+                disk,
+                osType,
+                osImage,
+                projectId,
+            }).save())
 
-        newInstance = await newInstance.save()
+        } else if (data.applicationType === "web" && data.environment === "prod") {
+            prodInstances.forEach(async suffix => await LoadBalancer({
+                name: `${instanceGroupName}-${suffix}`,
+                projectId,
+            }).save())
+        }
+
         return res.status(201).send({ _id: projectId, ...newProject })
     } catch (error) {
         console.error(error.message)
@@ -160,6 +140,81 @@ app.post("/register-vm", async (req, res) => {
     //     return res.send("Insufficient ressources")
     // }
 })
+
+
+app.post("/create-vm", async (req, res) => {
+    console.log("Creating VM:", req.body)
+
+    // CREATE NEW VM
+    provisioning(req.body).then(instances => res.send(instances)).catch(error => res.send(error.message))
+})
+
+const provisioning = async (data) => {
+    data['instanceGroupName'] = normalizeString(data.projectName)
+    switch (data.provider) {
+        case "gcp":
+            if (data.applicationType === "web" && data.environment === "dev") {
+                return axios.post(PROVISIONING_URL, data)
+                    // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
+                    .then(async (response) => {
+                        newVmInstances = await VmInstance.find({ instanceGroupName: data.instanceGroupName })
+                        console.log("FROM CREATE VM:", newVmInstances)
+                        newVmInstances.forEach(async (instance, index) => {
+                            instance.name = response.data[index].name
+                            instance.publicIP = response.data[index].publicIP
+                            instance.privateIP = response.data[index].privateIP
+                            await instance.save()
+                        })
+
+                        console.log(response.data)
+                        console.log(newVmInstances)
+
+                        return newVmInstances
+                    })
+                    .catch((error) => {
+                        console.error(error.message)
+                        return error
+                    })
+            }
+            if (data.applicationType === "web" && data.environment === "prod") {
+                let newLoadBalancers = []
+                return axios.post(PROVISIONING_URL, data)
+                    // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
+                    .then(response => {
+                        console.log(response.data)
+
+                        reponse.data.forEach((loadbalancer, index) => {
+                            await LoadBalancer.find({ name: data.loadbalancer.name })
+                            loadbalancer.name = response.data[index].name
+                            loadbalancer.IPAddress = response.data[index].IPAddress
+                            newLoadBalancers.push(await loadbalancer.save())
+                        })
+
+                        console.log(newLoadBalancers)
+
+                        return newLoadBalancers
+                    })
+                    .catch((error) => {
+                        console.error(error.message)
+                        return error
+                    })
+            }
+        default:
+            break;
+    }
+}
+
+
+// Example replace "DiafProject" to "diaf-project"
+const normalizeString = (str) => {
+    /**
+     * Example replace "DiafProject" to "diaf-project"
+     */
+    return str
+        .replace(/[A-Z][a-z]*/g, (str) => `-${str.toLowerCase()}`)
+        .replace(/ /g, '').trim().replace(/--/g, '')
+        .replace(/(^-)|(-$)/g, '')
+}
 
 app.listen(PORT, () => {
     console.log("Listenning on port ", PORT)
