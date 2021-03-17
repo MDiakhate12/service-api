@@ -4,7 +4,7 @@ const connect = require('./config/db');
 const VmInstance = require('./models/vmInstance');
 const LoadBalancer = require('./models/loadBalancer');
 const Project = require('./models/project');
-const checkAvailability = require('./utils');
+// const checkAvailability = require('./utils');
 const axios = require('axios')
 
 const PORT = process.env.PORT || 8080;
@@ -13,6 +13,8 @@ const PROVISIONING_URL = "http://localhost:4000"
 // const PROVISIONING_URL = `https://faas-cloud-provisioning.${BASE_DOMAIN_NAME}`
 const ORIENTATION_URL = "http://localhost:8085"
 // const ORIENTATION_URL = `https://faas-cloud-orientation.${BASE_DOMAIN_NAME}`
+
+const DEFAULT_TIMEOUT = 1000 * 60 * 10
 
 // Suffix of ressources created on dev (vm instances)
 const devInstances = ["frontend", "backend", "database"]
@@ -44,6 +46,17 @@ app.get("/projects/:projectId/instances", async (req, res) => {
         let vmInstances = await VmInstance.find({ projectId })
         console.log(vmInstances)
         res.send(vmInstances);
+    } catch (error) {
+        console.error(error)
+    }
+})
+
+app.get("/projects/:projectId/loadbalancers", async (req, res) => {
+    projectId = req.params.projectId
+    try {
+        let loadBalancers = await LoadBalancer.find({ projectId })
+        console.log(loadBalancers)
+        res.send(loadBalancers);
     } catch (error) {
         console.error(error)
     }
@@ -124,10 +137,17 @@ app.post("/register-vm", async (req, res) => {
                 projectId,
             }).save())
 
-        } else if (data.applicationType === "web" && data.environment === "prod") {
+        } else if (project.applicationType === "web" && project.environment === "prod") {
             prodInstances.forEach(async suffix => await LoadBalancer({
                 name: `${instanceGroupName}-${suffix}`,
                 projectId,
+                instanceTemplate: {
+                    cpu,
+                    memory,
+                    disk,
+                    osType,
+                    osImage,
+                }
             }).save())
         }
 
@@ -145,8 +165,12 @@ app.post("/register-vm", async (req, res) => {
 app.post("/create-vm", async (req, res) => {
     console.log("Creating VM:", req.body)
 
+    req.setTimeout(DEFAULT_TIMEOUT)
+    res.setTimeout(DEFAULT_TIMEOUT)
+
     // CREATE NEW VM
     provisioning(req.body).then(instances => res.send(instances)).catch(error => res.send(error.message))
+
 })
 
 const provisioning = async (data) => {
@@ -157,7 +181,7 @@ const provisioning = async (data) => {
                 return axios.post(PROVISIONING_URL, data)
                     // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
                     .then(async (response) => {
-                        newVmInstances = await VmInstance.find({ instanceGroupName: data.instanceGroupName })
+                        let newVmInstances = await VmInstance.find({ instanceGroupName: data.instanceGroupName })
                         console.log("FROM CREATE VM:", newVmInstances)
                         newVmInstances.forEach(async (instance, index) => {
                             instance.name = response.data[index].name
@@ -177,20 +201,22 @@ const provisioning = async (data) => {
                     })
             }
             if (data.applicationType === "web" && data.environment === "prod") {
-                let newLoadBalancers = []
                 return axios.post(PROVISIONING_URL, data)
                     // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
-                    .then(response => {
-                        console.log(response.data)
+                    .then(async response => {
+                        let newLoadBalancers = await LoadBalancer.find({ name: { $regex: `${data.instanceGroupName}-` } })
 
-                        reponse.data.forEach((loadbalancer, index) => {
-                            await LoadBalancer.find({ name: data.loadbalancer.name })
-                            loadbalancer.name = response.data[index].name
-                            loadbalancer.IPAddress = response.data[index].IPAddress
-                            newLoadBalancers.push(await loadbalancer.save())
+                        console.log("DATA", data)
+                        console.log("RESPONSE DATA", response.data)
+
+                        newLoadBalancers.forEach(async (lb, index) => {
+                            lb.name = response.data[index].name
+                            lb.IPAddress = response.data[index].IPAddress
+                            lb.loadBalancingScheme = response.data[index].loadBalancingScheme
+                            await lb.save()
                         })
 
-                        console.log(newLoadBalancers)
+                        console.log("NEW LOAD BALANCERS", newLoadBalancers)
 
                         return newLoadBalancers
                     })
@@ -216,6 +242,10 @@ const normalizeString = (str) => {
         .replace(/(^-)|(-$)/g, '')
 }
 
-app.listen(PORT, () => {
+// let server = http.createServer(app) // We can also do it like this
+
+let server = app.listen(PORT, () => {
     console.log("Listenning on port ", PORT)
 })
+
+server.timeout = DEFAULT_TIMEOUT

@@ -7,15 +7,13 @@ const LoadBalancerSchema = new Schema({
     name: { type: String },
     projectId: { type: Schema.Types.ObjectId, ref: 'Projects' },
     IPAddress: { type: String },
-    frontend: {
-        privateIP: { type: String },
-        publicIP: { type: String },
-    },
-    backend: {
-        privateIP: { type: String },
-        publicIP: { type: String },
-    },
-
+    instanceTemplate: {
+        cpu: { type: String },
+        memory: { type: String },
+        disk: { type: String },
+        osType: { type: String },
+        osImage: { type: String },
+    }
 });
 
 const LoadBalancer = mongoose.model('loadBalancers', LoadBalancerSchema);
