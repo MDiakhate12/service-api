@@ -9,7 +9,10 @@ const axios = require('axios')
 
 const PORT = process.env.PORT || 8080;
 const BASE_DOMAIN_NAME = "mouhammad.ml"
-const PROVISIONING_URL = "http://localhost:4000"
+
+const PROVISIONING_URL_PROD_LOCAL = "http://localhost:4000"
+const PROVISIONING_URL_DEV_LOCAL = "http://localhost:5000"
+
 // const PROVISIONING_URL = `https://faas-cloud-provisioning.${BASE_DOMAIN_NAME}`
 const ORIENTATION_URL = "http://localhost:8085"
 // const ORIENTATION_URL = `https://faas-cloud-orientation.${BASE_DOMAIN_NAME}`
@@ -41,7 +44,7 @@ app.get("/projects", async (req, res) => {
 })
 
 app.get("/projects/:projectId/instances", async (req, res) => {
-    projectId = req.params.projectId
+    let projectId = req.params.projectId
     try {
         let vmInstances = await VmInstance.find({ projectId })
         console.log(vmInstances)
@@ -52,7 +55,7 @@ app.get("/projects/:projectId/instances", async (req, res) => {
 })
 
 app.get("/projects/:projectId/loadbalancers", async (req, res) => {
-    projectId = req.params.projectId
+    let projectId = req.params.projectId
     try {
         let loadBalancers = await LoadBalancer.find({ projectId })
         console.log(loadBalancers)
@@ -102,7 +105,7 @@ app.post("/register-vm", async (req, res) => {
     let instanceGroupName = normalizeString(project.projectName)
 
     // TEST IF INSTANCE GROUP WITH SAME NAME EXIST
-    testInstance = await VmInstance.find({ instanceGroupName })
+    let testInstance = await VmInstance.find({ instanceGroupName })
 
     if (testInstance.length !== 0) {
         return res.send("Instance with same name already exist")
@@ -123,7 +126,7 @@ app.post("/register-vm", async (req, res) => {
 
         let newProject = new Project(project)
 
-        projectId = (await newProject.save())._id
+        let projectId = (await newProject.save())._id
 
         if (project.applicationType === "web" && project.environment === "dev") {
             devInstances.forEach(async suffix => await VmInstance({
@@ -178,7 +181,7 @@ const provisioning = async (data) => {
     switch (data.provider) {
         case "gcp":
             if (data.applicationType === "web" && data.environment === "dev") {
-                return axios.post(PROVISIONING_URL, data)
+                return axios.post(PROVISIONING_URL_DEV_LOCAL, data)
                     // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
                     .then(async (response) => {
                         let newVmInstances = await VmInstance.find({ instanceGroupName: data.instanceGroupName })
@@ -201,7 +204,7 @@ const provisioning = async (data) => {
                     })
             }
             if (data.applicationType === "web" && data.environment === "prod") {
-                return axios.post(PROVISIONING_URL, data)
+                return axios.post(PROVISIONING_URL_PROD_LOCAL, data)
                     // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
                     .then(async response => {
                         let newLoadBalancers = await LoadBalancer.find({ name: { $regex: `${data.instanceGroupName}-` } })
@@ -225,6 +228,7 @@ const provisioning = async (data) => {
                         return error
                     })
             }
+            break;
         default:
             break;
     }
@@ -232,11 +236,11 @@ const provisioning = async (data) => {
 
 
 // Example replace "DiafProject" to "diaf-project"
-const normalizeString = (str) => {
+const normalizeString = (target) => {
     /**
      * Example replace "DiafProject" to "diaf-project"
      */
-    return str
+    return target
         .replace(/[A-Z][a-z]*/g, (str) => `-${str.toLowerCase()}`)
         .replace(/ /g, '').trim().replace(/--/g, '')
         .replace(/(^-)|(-$)/g, '')
