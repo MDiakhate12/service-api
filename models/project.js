@@ -1,29 +1,37 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
 const ProjectSchema = new Schema({
-    projectName: { type: String },              // "Nom Prjecet",
-    applicationType: { type: String },          // "Development ,Big Data, ML",
-    dependencies: { type: [String] },           // ["nginx", "node js express", "mongo db"],
-    SLA: { type: Number },                      // "1h or 2h or 4h ",
-    environment: { type: String },              // "dev prod",
-    dataSize: { type: Number },                 // "i will ask to moussa for exact value",
-    connectedApplications: { type: [String] },  // ["Agacy", "CRM" ],
-    techRequirements: { type: [String] },       // ["network value", "bandwith"],
-    costEstimation: { type: Number },          // "une valeur",
-    provider: { type: String },                // "une valeur",
-    frontendOptions: {
-        frontend_project_repository: { type: String }
-    },
-    backendOptions: {
-        backend_db_uri: { type: String },
-        backend_port: { type: Number },
-        backend_main_file: { type: String },
-        backend_project_repository: { type: String },
-    }
+  projectName: { type: String },
+  applicationType: { type: String },
+  dependencies: { type: [String] },
+  SLA: { type: String },
+  environment: { type: String },
+  stack: { type: String },
+  connectedApplications: { type: [String] },
+  costEstimation: { type: Number },
+  cpu: { type: String },
+  disk: { type: String },
+  memory: { type: String },
+  numberOfVm: { type: String },
+  osImage: { type: String },
+  osType: { type: String },
+  publicIP: { type: String },
+  provider: { type: String },
+  projectArchitecture: { type: String },
+  frontendOptions: {
+    project_repository: { type: String },
+  },
+  backendOptions: {
+    db_uri: { type: String },
+    port: { type: Number },
+    main_file: { type: String },
+    project_repository: { type: String },
+    jar_url: { type: String },
+  },
 });
 
-const Project = mongoose.model('Projects', ProjectSchema);
+const Project = mongoose.model("Projects", ProjectSchema);
 
-module.exports = Project
+module.exports = Project;

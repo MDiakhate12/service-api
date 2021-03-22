@@ -7,6 +7,7 @@ const LoadBalancerSchema = new Schema({
     name: { type: String },
     projectId: { type: Schema.Types.ObjectId, ref: 'Projects' },
     IPAddress: { type: String },
+    loadBalancingScheme: { type: String },
     instanceTemplate: {
         cpu: { type: String },
         memory: { type: String },
