@@ -8,23 +8,24 @@ const Project = require("./models/project");
 const axios = require("axios");
 const auth = require("./middleware/auth");
 
-const PORT = process.env.PORT || 8080;
-const BASE_DOMAIN_NAME = "mouhammad.ml";
+const PORT = process.env.PORT || 8080
+const PROVISIONING_URL_AWS = 'http://localhost:4000'
+const BASE_DOMAIN_NAME = 'mouhammad.ml'
 
-const PROVISIONING_URL_PROD_LOCAL = "http://localhost:4000";
-const PROVISIONING_URL_DEV_LOCAL = "http://localhost:5000";
+const PROVISIONING_URL_PROD_LOCAL = 'http://localhost:4000'
+const PROVISIONING_URL_DEV_LOCAL = 'http://localhost:5000'
 
 // const PROVISIONING_URL = `https://faas-cloud-provisioning.${BASE_DOMAIN_NAME}`
-const ORIENTATION_URL = "http://localhost:8085";
+const ORIENTATION_URL = 'http://localhost:8085'
 // const ORIENTATION_URL = `https://faas-cloud-orientation.${BASE_DOMAIN_NAME}`
 
 const DEFAULT_TIMEOUT = 1000 * 60 * 10;
 
 // Suffix of ressources created on dev (vm instances)
-const devInstances = ["frontend", "backend", "database"];
+const devInstances = ['frontend', 'backend', 'database']
 
 // Suffix of ressources created on prod (loadBalancers)
-const prodInstances = ["frontend", "backend"];
+const prodInstances = ['frontend', 'backend']
 
 const app = express();
 
@@ -35,7 +36,7 @@ app.use(express.json());
 app.use("/auth/register", require("./api/users"));
 app.use("/auth/login", require("./api/auth"));
 
-connect();
+connect()
 
 app.use(express.json());
 
@@ -222,47 +223,107 @@ const provisioning = async (data) => {
             .then(async (response) => {
               let newLoadBalancers = await LoadBalancer.find({
                 name: { $regex: `${data.instanceGroupName}-` },
-              }).sort({ _id: "desc" });
+              })
 
-              console.log("DATA", data);
-              console.log("RESPONSE DATA", response.data);
+              console.log('DATA', data)
+              console.log('RESPONSE DATA', response.data)
 
               newLoadBalancers.forEach(async (lb, index) => {
-                lb.name = response.data[index].name;
-                lb.IPAddress = response.data[index].IPAddress;
+                lb.name = response.data[index].name
+                lb.IPAddress = response.data[index].IPAddress
                 lb.loadBalancingScheme =
-                  response.data[index].loadBalancingScheme;
-                await lb.save();
-              });
+                  response.data[index].loadBalancingScheme
+                await lb.save()
+              })
 
-              console.log("NEW LOAD BALANCERS", newLoadBalancers);
+              console.log('NEW LOAD BALANCERS', newLoadBalancers)
 
-              return newLoadBalancers;
+              return newLoadBalancers
             })
             .catch((error) => {
-              console.error(error.message);
-              return error;
+              console.error(error.message)
+              return error
             })
-        );
+        )
       }
-      break;
+      break
+    case 'aws':
+      if (data.applicationType === 'web' && data.environment === 'dev') {
+        return (
+          axios
+            .post(PROVISIONING_URL_AWS, data)
+            // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
+            .then(async (response) => {
+              devInstances.forEach(async (suffix) => {
+                const instance = await VmInstance.findOne({
+                  name: `${data.instanceGroupName}-${suffix}`,
+                })
+                instance.publicIP = response.data[suffix].value
+                await instance.save()
+              })
+              let newVmInstances = await VmInstance.find({
+                instanceGroupName: data.instanceGroupName,
+              })
+              return newVmInstances
+            })
+            .catch((error) => {
+              console.error(error.message)
+              return error
+            })
+        )
+      }
+      if (data.applicationType === 'web' && data.environment === 'prod') {
+        return (
+          axios
+            .post(PROVISIONING_URL, data)
+            // return axios.post(`${PROVISIONING_URL}/provisioning-google-${data.environment}`, data)
+            .then(async (response) => {
+              Promise.all(
+                prodInstances.map(async (suffix) => {
+                  const lb = await LoadBalancer.findOne({
+                    name: `${data.instanceGroupName}-${suffix}`,
+                  })
+                  console.log('load balancer: ', lb)
+                  lb.IPAddress = response.data[suffix].value
+                  await lb.save()
+                }),
+              ).then(async () => {
+                console.log('DATA', data)
+                console.log('RESPONSE DATA', response.data)
+
+                let newLoadBalancers = await LoadBalancer.find({
+                  name: { $regex: `${data.instanceGroupName}-` },
+                })
+
+                console.log('NEW LOAD BALANCERS', newLoadBalancers)
+
+                return newLoadBalancers
+              })
+            })
+            .catch((error) => {
+              console.error(error.message)
+              return error
+            })
+        )
+      }
+      break
     default:
-      break;
+      break
   }
-};
+}
 
 // Example replace "DiafProject" to "diaf-project"
-const normalizeString = (target) => {
+const normalizeString = (str) => {
   /**
    * Example replace "DiafProject" to "diaf-project"
    */
-  return target
+  return str
     .replace(/[A-Z][a-z]*/g, (str) => `-${str.toLowerCase()}`)
-    .replace(/ /g, "")
+    .replace(/ /g, '')
     .trim()
-    .replace(/--/g, "")
-    .replace(/(^-)|(-$)/g, "");
-};
+    .replace(/--/g, '')
+    .replace(/(^-)|(-$)/g, '')
+}
 
 // let server = http.createServer(app) // We can also do it like this
 
