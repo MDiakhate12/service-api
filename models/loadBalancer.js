@@ -1,22 +1,25 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 const ObjectId = Schema.Types.ObjectId;
 
-const LoadBalancerSchema = new Schema({
+const LoadBalancerSchema = new Schema(
+  {
     name: { type: String },
-    projectId: { type: Schema.Types.ObjectId, ref: 'Projects' },
+    projectId: { type: Schema.Types.ObjectId, ref: "Projects" },
     IPAddress: { type: String },
     loadBalancingScheme: { type: String },
     instanceTemplate: {
-        cpu: { type: String },
-        memory: { type: String },
-        disk: { type: String },
-        osType: { type: String },
-        osImage: { type: String },
-    }
-});
+      cpu: { type: String },
+      memory: { type: String },
+      disk: { type: String },
+      osType: { type: String },
+      osImage: { type: String },
+    },
+  },
+  { timestamps: true }
+);
 
-const LoadBalancer = mongoose.model('loadBalancers', LoadBalancerSchema);
+const LoadBalancer = mongoose.model("loadBalancers", LoadBalancerSchema);
 
-module.exports = LoadBalancer
+module.exports = LoadBalancer;
