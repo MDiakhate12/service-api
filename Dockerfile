@@ -1,37 +1,20 @@
-FROM node:10.12.0-alpine as ship
+# Use the official lightweight Node.js 12 image.
+# https://hub.docker.com/_/node
+FROM node:14-slim
 
-RUN addgroup -S app && adduser -S -g app app
+# Create and change to the app directory.
+WORKDIR /usr/src/app
 
-RUN apk --no-cache add ca-certificates
-COPY --from=hashicorp/terraform:light /bin/terraform /bin/
-WORKDIR /root/
+# Copy application dependency manifests to the container image.
+# A wildcard is used to ensure both package.json AND package-lock.json are copied.
+# Copying this separately prevents re-running npm install on every code change.
+COPY package*.json ./
 
-# Turn down the verbosity to default level.
-ENV NPM_CONFIG_LOGLEVEL warn
- 
-RUN mkdir -p /home/app
+# Install production dependencies.
+RUN npm install --only=production
 
-# Wrapper/boot-strapper
-WORKDIR /home/app
-COPY package.json ./
+# Copy local code to the container image.
+COPY . ./
 
-# This ordering means the npm installation is cached for the outer function handler.
-RUN npm i
-
-# Copy outer function handler
-COPY index.js ./
-COPY models models
-COPY config config
-
-# Set correct permissions to use non root user
-WORKDIR /home/app/
-
-# chmod for tmp is for a buildkit issue (@alexellis)
-RUN chown app:app -R /home/app \
-    && chmod 777 /tmp
-
-USER app
-
-RUN touch /tmp/.lock
-
-CMD ["node", "index.js"]
+# Run the web service on container startup.
+CMD [ "npm", "start" ]
